@@ -41,6 +41,7 @@ func getDSN() string {
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_NAME"),
 		os.Getenv("DB_SSLMODE"))
+	log.Printf("Сформирован DSN:%s", res)
 	return res
 }
 
@@ -76,30 +77,30 @@ func searchSong(group, song string) (*SongDetail, error) {
 	encodSong := url.QueryEscape(song)   //Формируем для url без пробелов
 
 	url := fmt.Sprintf("%s?group=%s&song=%s", apiURL, encodGroup, encodSong)
-	log.Printf("Отправка запроса к API: %s", url)
+	log.Printf("Отправка запроса к API:%s", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Printf("Ошибка при выполнении запроса к API: %v", err)
-		return nil, fmt.Errorf("Ошибка при выполнении запроса к API: %v", err)
+		log.Printf("Ошибка при выполнении запроса к API:%v", err)
+		return nil, fmt.Errorf("Ошибка при выполнении запроса к API:%v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("API вернул статус: %s", resp.Status)
-		return nil, fmt.Errorf("API вернул статус: %s", resp.Status)
+		log.Printf("API вернул статус:%s", resp.Status)
+		return nil, fmt.Errorf("API вернул статус:%s", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("Ошибка при чтении ответа API: %v", err)
-		return nil, fmt.Errorf("Ошибка при чтении ответа API: %v", err)
+		log.Printf("Ошибка при чтении ответа API:%v", err)
+		return nil, fmt.Errorf("Ошибка при чтении ответа API:%v", err)
 	}
 
 	var detail SongDetail
 	if err := json.Unmarshal(body, &detail); err != nil {
-		log.Printf("Ошибка при декодировании в searchSong: %v", err)
-		return nil, fmt.Errorf("Ошибка при декодировании JSON: %v", err)
+		log.Printf("Ошибка при декодировании в searchSong:%v", err)
+		return nil, fmt.Errorf("Ошибка при декодировании JSON:%v", err)
 	}
 
 	return &detail, nil
@@ -112,7 +113,7 @@ func addSong(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&s)
 	if err != nil {
 		http.Error(w, "Ошибка декодирования в addSong", http.StatusBadRequest)
-		log.Printf("Ошибка декодирования в addSong: %v", err)
+		log.Printf("Ошибка декодирования в addSong:%v", err)
 		return
 	}
 
@@ -126,14 +127,14 @@ func addSong(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if errex != sql.ErrNoRows {
 		http.Error(w, "Ошибка при проверке существования песни", http.StatusInternalServerError)
-		log.Printf("Ошибка при проверке существования песни: %v", err)
+		log.Printf("Ошибка при проверке существования песни:%v", err)
 		return
 	}
 
 	detail, err := searchSong(s.Group, s.Song)
 	if err != nil {
 		http.Error(w, "Ошибка при получении данных о песне", http.StatusInternalServerError)
-		log.Printf("Ошибка при получении данных о песне: %v", err)
+		log.Printf("Ошибка при получении данных о песне:%v", err)
 		return
 	}
 
@@ -143,7 +144,7 @@ func addSong(w http.ResponseWriter, r *http.Request) {
 	)
 	if errexec != nil {
 		http.Error(w, "Ошибка вставки в базу данных", http.StatusInternalServerError)
-		log.Printf("Ошибка вставки в базу данных: %v", err)
+		log.Printf("Ошибка вставки в базу данных:%v", err)
 		return
 	}
 
@@ -166,7 +167,7 @@ func getSong(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&req)
 	if err != nil {
 		http.Error(w, "Ошибка декодирования в getSong", http.StatusBadRequest)
-		log.Printf("Ошибка декодирования в getSong: %v", err)
+		log.Printf("Ошибка декодирования в getSong:%v", err)
 		return
 	}
 
@@ -230,7 +231,7 @@ func getText(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&req)
 	if err != nil {
 		http.Error(w, "Ошибка декодирования в getText", http.StatusBadRequest)
-		log.Printf("Ошибка декодирования в getText: %v", err)
+		log.Printf("Ошибка декодирования в getText:%v", err)
 		return
 	}
 
@@ -253,14 +254,13 @@ func getText(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Песня не найдена", http.StatusNotFound)
 		} else {
 			http.Error(w, "Ошибка при выполнении запроса к базе данных", http.StatusInternalServerError)
-			log.Printf("Ошибка при выполнении запроса к базе данных в getText: %v", errtext)
+			log.Printf("Ошибка при выполнении запроса к базе данных в getText:%v", errtext)
 		}
 		return
 	}
 
-	tex = strings.ReplaceAll(tex, `\n`, "\n") // Заменяем литеральные \n на реальные символы из бд
-
-	cuplet := strings.Split(tex, "\n\n") // Разделяем текст на куплеты
+	tex = strings.ReplaceAll(tex, `\n`, "\n") // Заменяем символ \n на реальный \n, т.к бд не видит при пагинации разделения
+	cuplet := strings.Split(tex, "\n\n")      // Разделяем текст на куплеты
 	start := req.Offset
 	end := req.Offset + req.Limit
 
@@ -295,14 +295,14 @@ func delSong(w http.ResponseWriter, r *http.Request) {
 	result, errdel := database.Exec(`DELETE FROM public.songs WHERE song = $1`, s.Song)
 	if errdel != nil {
 		http.Error(w, "Ошибка при удалении записи из базы данных", http.StatusInternalServerError)
-		log.Printf("Ошибка при удалении записи из базы данных: %v", err)
+		log.Printf("Ошибка при удалении записи из базы данных:%v", err)
 		return
 	}
 
 	rows, errrows := result.RowsAffected()
 	if errrows != nil {
 		http.Error(w, "Ошибка при поиске песни для удаления", http.StatusNotFound)
-		log.Printf("Ошибка при поиске песни для удаления: %v", errrows)
+		log.Printf("Ошибка при поиске песни для удаления:%v", errrows)
 		return
 	}
 	if rows == 0 {
@@ -336,14 +336,14 @@ func updateSong(w http.ResponseWriter, r *http.Request) {
 		s.Group, s.Text, s.Song)
 	if errupd != nil {
 		http.Error(w, "Ошибка обновления записи в базе данных", http.StatusInternalServerError)
-		log.Printf("Ошибка обновления записи в базе данных: %v", err)
+		log.Printf("Ошибка обновления записи в базе данных:%v", err)
 		return
 	}
 
 	rows, errrows := result.RowsAffected()
 	if errrows != nil {
 		http.Error(w, "Ошибка при поиске песни для обновления", http.StatusNotFound)
-		log.Printf("Ошибка при поиске песни для обновления: %v", errrows)
+		log.Printf("Ошибка при поиске песни для обновления:%v", errrows)
 		return
 	}
 	if rows == 0 {
