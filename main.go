@@ -24,7 +24,7 @@ type Song struct {
 	Group       string `json:"group"`
 	Song        string `json:"song"`
 	Text        string `json:"text,omitempty"`
-	ReleaseDate string `json:"releaseDate,omitempty"`
+	ReleaseDate string `json:"release_date,omitempty"`
 	Link        string `json:"link,omitempty"`
 }
 
@@ -330,13 +330,47 @@ func updateSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, errupd := database.Exec(`UPDATE public.songs
-		 SET "group" = $1, "text" = $2 
-		 WHERE song = $3`,
-		s.Group, s.Text, s.Song)
+	// Формируем динамический запрос для базки
+	query := `UPDATE public.songs SET `
+	var params []interface{}
+	paramCount := 1
+
+	if s.Group != "" {
+		query += `"group" = $` + fmt.Sprint(paramCount) + `, `
+		params = append(params, s.Group)
+		paramCount++
+	}
+	if s.Text != "" {
+		query += `"text" = $` + fmt.Sprint(paramCount) + `, `
+		params = append(params, s.Text)
+		paramCount++
+	}
+	if s.ReleaseDate != "" {
+		query += `release_date = $` + fmt.Sprint(paramCount) + `, `
+		params = append(params, s.ReleaseDate)
+		paramCount++
+	}
+	if s.Link != "" {
+		query += `link = $` + fmt.Sprint(paramCount) + `, `
+		params = append(params, s.Link)
+		paramCount++
+	}
+
+	if len(params) == 0 {
+		http.Error(w, "Нет данных для обновления", http.StatusBadRequest)
+		return
+	}
+
+	// Убираем последнюю запятую, перед WHERE
+	query = query[:len(query)-2]
+
+	query += ` WHERE song = $` + fmt.Sprint(paramCount)
+	params = append(params, s.Song)
+
+	result, errupd := database.Exec(query, params...)
 	if errupd != nil {
 		http.Error(w, "Ошибка обновления записи в базе данных", http.StatusInternalServerError)
-		log.Printf("Ошибка обновления записи в базе данных:%v", err)
+		log.Printf("Ошибка обновления записи в базе данных:%v", errupd)
 		return
 	}
 
