@@ -34,6 +34,7 @@ type SongDetail struct {
 	Link        string `json:"link"`
 }
 
+// Формируем DSN для бд
 func getDSN() string {
 	res := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=%s", os.Getenv("DB_HOST"),
 		os.Getenv("DB_PORT"),
@@ -43,12 +44,14 @@ func getDSN() string {
 	return res
 }
 
+// Загружаем данные из .env
 func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Ошибка загрузки .env файла")
 	}
 }
 
+// Запуск контейнера postgres, ожидание 5 секунд, запуск миграции
 func runDB() {
 	errdb := exec.Command("make", "db-up").Run()
 	if errdb != nil {
@@ -65,11 +68,12 @@ func runDB() {
 	log.Println("Миграция запущена")
 }
 
+// Запрос к внешнему API
 func searchSong(group, song string) (*SongDetail, error) {
 	apiURL := os.Getenv("API_URL")
 
-	encodGroup := url.QueryEscape(group)
-	encodSong := url.QueryEscape(song)
+	encodGroup := url.QueryEscape(group) //Формируем для url без пробелов
+	encodSong := url.QueryEscape(song)   //Формируем для url без пробелов
 
 	url := fmt.Sprintf("%s?group=%s&song=%s", apiURL, encodGroup, encodSong)
 	log.Printf("Отправка запроса к API: %s", url)
@@ -254,11 +258,9 @@ func getText(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Заменяем литеральные \n на реальные символы новой строки
-	tex = strings.ReplaceAll(tex, `\n`, "\n")
+	tex = strings.ReplaceAll(tex, `\n`, "\n") // Заменяем литеральные \n на реальные символы из бд
 
-	// Разделяем текст на куплеты
-	cuplet := strings.Split(tex, "\n\n")
+	cuplet := strings.Split(tex, "\n\n") // Разделяем текст на куплеты
 	start := req.Offset
 	end := req.Offset + req.Limit
 
