@@ -106,6 +106,16 @@ func searchSong(group, song string) (*SongDetail, error) {
 	return &detail, nil
 }
 
+// @Summary Добавить песню(обращается к тестовому апи)
+// @Description Добавляет новую песню с тестового апи
+// @Accept json
+// @Produce json
+// @Param song body Song true "Данные песни"
+// @Success 201 {object} string "Песня добавлена"
+// @Failure 400 {object} string "Ошибка декодирования"
+// @Failure 409 {object} string "Песня уже существует"
+// @Failure 500 {object} string "Ошибка при получении данных о песне или вставке в базу данных"
+// @Router /song [post]
 func addSong(w http.ResponseWriter, r *http.Request) {
 	var s Song
 
@@ -152,12 +162,24 @@ func addSong(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("Песня добавлена")
 }
 
+// @Summary Получить список песен
+// @Description Возвращает список песен с пагинацией и фильтрацией по группе и названию
+// @Accept json
+// @Produce json
+// @Param request body struct { Group string `json:"group"`; Song string `json:"song"`; Text string `json:"text"`; ReleaseDate string `json:"release_date"`; Link string `json:"link"`; Limit int `json:"limit"`; Offset int `json:"offset"` } true "Параметры"
+// @Success 200 {array} Song "Список песен"
+// @Failure 400 {object} string "Ошибка декодирования"
+// @Failure 500 {object} string "Ошибка запроса к базе данных"
+// @Router /song [get]
 func getSong(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Group  string `json:"group"`
-		Song   string `json:"song"`
-		Limit  int    `json:"limit"`
-		Offset int    `json:"offset"`
+		Group       string `json:"group"`
+		Song        string `json:"song"`
+		Text        string `json:"text"`
+		ReleaseDate string `json:"release_date"`
+		Link        string `json:"link"`
+		Limit       int    `json:"limit"`
+		Offset      int    `json:"offset"`
 	}
 
 	var filters []string
@@ -175,7 +197,7 @@ func getSong(w http.ResponseWriter, r *http.Request) {
 		req.Limit = 10
 	}
 
-	if req.Offset == 0 {
+	if req.Offset < 0 {
 		req.Offset = 0
 	}
 
@@ -186,6 +208,18 @@ func getSong(w http.ResponseWriter, r *http.Request) {
 	if req.Song != "" {
 		filters = append(filters, "song = $2")
 		params = append(params, req.Song)
+	}
+	if req.Text != "" {
+		filters = append(filters, "text ILIKE $3")
+		params = append(params, "%"+req.Text+"%") // Поиск по частичному совпадению
+	}
+	if req.ReleaseDate != "" {
+		filters = append(filters, "release_date = $4")
+		params = append(params, req.ReleaseDate)
+	}
+	if req.Link != "" {
+		filters = append(filters, "link = $5")
+		params = append(params, req.Link)
 	}
 
 	filterQuery := ""
@@ -208,7 +242,8 @@ func getSong(w http.ResponseWriter, r *http.Request) {
 	var songs []Song
 	for rows.Next() {
 		var s Song
-		if err := rows.Scan(&s.Group, &s.Song); err != nil {
+		errrow := rows.Scan(&s.Group, &s.Song, &s.Text, &s.ReleaseDate, &s.Link)
+		if errrow != nil {
 			http.Error(w, "Ошибка обработки данных", http.StatusInternalServerError)
 			log.Printf("Ошибка обработки данных: %v", err)
 			return
@@ -220,6 +255,16 @@ func getSong(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(songs)
 }
 
+// @Summary Получить текст песни с пагинацией по куплетам
+// @Description Возвращает текст песни, разделенный на куплеты, с пагинацией
+// @Accept json
+// @Produce json
+// @Param request body struct { Song string `json:"song"`; Limit int `json:"limit"`; Offset int `json:"offset"` } true "Параметры"
+// @Success 200 {array} string "Список куплетов"
+// @Failure 400 {object} string "Ошибка декодирования или отсутствует название песни"
+// @Failure 404 {object} string "Песня не найдена"
+// @Failure 500 {object} string "Ошибка при выполнении запроса к базе данных"
+// @Router /song/text [post]
 func getText(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Song   string `json:"song"`
@@ -276,6 +321,16 @@ func getText(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(paginCuplet)
 }
 
+// @Summary Удалить песню
+// @Description Удаляет песню из библиотеки по её названию
+// @Accept json
+// @Produce json
+// @Param song body Song true "Название песни для удаления"
+// @Success 200 {object} string "Песня удалена"
+// @Failure 400 {object} string "Ошибка декодирования или отсутствует название песни"
+// @Failure 404 {object} string "Песня не найдена"
+// @Failure 500 {object} string "Ошибка при удалении записи из базы данных"
+// @Router /song [delete]
 func delSong(w http.ResponseWriter, r *http.Request) {
 	var s Song
 
@@ -314,6 +369,16 @@ func delSong(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("Песня удалена")
 }
 
+// @Summary Обновить данные песни
+// @Description Обновляет информацию о песне
+// @Accept json
+// @Produce json
+// @Param song body Song true "Информация для обновления"
+// @Success 200 {object} string "Песня обновлена"
+// @Failure 400 {object} string "Ошибка декодирования или отсутствуют данные для обновления"
+// @Failure 404 {object} string "Песня не найдена"
+// @Failure 500 {object} string "Ошибка обновления записи в базе данных"
+// @Router /song [put]
 func updateSong(w http.ResponseWriter, r *http.Request) {
 	var s Song
 
@@ -389,6 +454,12 @@ func updateSong(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("Песня обновлена")
 }
 
+// @title Music_library
+// @version 1.0
+// @description добавляет, запрашивает песни с пагинацией. запрашивает песни с пагинацией по куплетам. обновляет и удаляет песни.
+// @host localhost:8080
+// @BasePath /
+// @schemes http
 func main() {
 	runDB()
 
