@@ -1,0 +1,209 @@
+basePath: /
+definitions:
+  structSong.ReqGetSong:
+    properties:
+      group:
+        type: string
+      limit:
+        type: integer
+      link:
+        type: string
+      offset:
+        type: integer
+      release_date:
+        type: string
+      song:
+        type: string
+      text:
+        type: string
+    type: object
+  structSong.ReqTextSong:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      song:
+        type: string
+    type: object
+  structSong.Song:
+    properties:
+      group:
+        type: string
+      link:
+        type: string
+      release_date:
+        type: string
+      song:
+        type: string
+      text:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Добавляет, запрашивает песни с пагинацией. запрашивает песни с пагинацией
+    по куплетам. Обновляет и удаляет песни.
+  title: Music_library
+  version: "1.0"
+paths:
+  /song:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет песню из библиотеки по её названию
+      parameters:
+      - description: Название песни для удаления
+        in: body
+        name: song
+        required: true
+        schema:
+          $ref: '#/definitions/structSong.Song'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Песня удалена
+          schema:
+            type: string
+        "400":
+          description: Ошибка декодирования или отсутствует название песни
+          schema:
+            type: string
+        "404":
+          description: Песня не найдена
+          schema:
+            type: string
+        "500":
+          description: Ошибка при удалении записи из базы данных
+          schema:
+            type: string
+      summary: Удалить песню
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список песен с пагинацией и фильтрацией по всем полям
+      parameters:
+      - description: Параметры
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structSong.ReqGetSong'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список песен
+          schema:
+            items:
+              $ref: '#/definitions/structSong.Song'
+            type: array
+        "400":
+          description: Ошибка декодирования
+          schema:
+            type: string
+        "500":
+          description: Ошибка запроса к базе данных
+          schema:
+            type: string
+      summary: Получить список песен
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новую песню с тестового апи
+      parameters:
+      - description: Данные песни
+        in: body
+        name: song
+        required: true
+        schema:
+          $ref: '#/definitions/structSong.Song'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Песня добавлена
+          schema:
+            type: string
+        "400":
+          description: Ошибка декодирования
+          schema:
+            type: string
+        "409":
+          description: Песня уже существует
+          schema:
+            type: string
+        "500":
+          description: Ошибка при получении данных о песне или вставке в базу данных
+          schema:
+            type: string
+      summary: Добавить песню(обращается к тестовому апи)
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию о песне
+      parameters:
+      - description: Информация для обновления
+        in: body
+        name: song
+        required: true
+        schema:
+          $ref: '#/definitions/structSong.Song'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Песня обновлена
+          schema:
+            type: string
+        "400":
+          description: Ошибка декодирования или отсутствуют данные для обновления
+          schema:
+            type: string
+        "404":
+          description: Песня не найдена
+          schema:
+            type: string
+        "500":
+          description: Ошибка обновления записи в базе данных
+          schema:
+            type: string
+      summary: Обновить данные песни
+  /song/text:
+    post:
+      consumes:
+      - application/json
+      description: Возвращает текст песни, разделенный на куплеты, с пагинацией
+      parameters:
+      - description: Параметры
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structSong.ReqTextSong'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список куплетов
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: Ошибка декодирования или отсутствует название песни
+          schema:
+            type: string
+        "404":
+          description: Песня не найдена
+          schema:
+            type: string
+        "500":
+          description: Ошибка при выполнении запроса к базе данных
+          schema:
+            type: string
+      summary: Получить текст песни с пагинацией по куплетам
+schemes:
+- http
+swagger: "2.0"

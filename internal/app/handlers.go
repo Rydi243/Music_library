@@ -17,11 +17,11 @@ import (
 // @Description Добавляет новую песню с тестового апи
 // @Accept json
 // @Produce json
-// @Param song body Song true "Данные песни"
-// @Success 201 {object} string "Песня добавлена"
-// @Failure 400 {object} string "Ошибка декодирования"
-// @Failure 409 {object} string "Песня уже существует"
-// @Failure 500 {object} string "Ошибка при получении данных о песне или вставке в базу данных"
+// @Param song body structSong.Song true "Данные песни"
+// @Success 201 {string} string "Песня добавлена"
+// @Failure 400 {string} string "Ошибка декодирования"
+// @Failure 409 {string} string "Песня уже существует"
+// @Failure 500 {string} string "Ошибка при получении данных о песне или вставке в базу данных"
 // @Router /song [post]
 func AddSong(w http.ResponseWriter, r *http.Request) {
 	var s structSong.Song
@@ -73,21 +73,13 @@ func AddSong(w http.ResponseWriter, r *http.Request) {
 // @Description Возвращает список песен с пагинацией и фильтрацией по всем полям
 // @Accept json
 // @Produce json
-// @Param request body struct { Group string `json:"group"`; Song string `json:"song"`; Text string `json:"text"`; ReleaseDate string `json:"release_date"`; Link string `json:"link"`; Limit int `json:"limit"`; Offset int `json:"offset"` } true "Параметры"
-// @Success 200 {array} Song "Список песен"
-// @Failure 400 {object} string "Ошибка декодирования"
-// @Failure 500 {object} string "Ошибка запроса к базе данных"
+// @Param request body structSong.ReqGetSong true "Параметры"
+// @Success 200 {array} structSong.Song "Список песен"
+// @Failure 400 {string} string "Ошибка декодирования"
+// @Failure 500 {string} string "Ошибка запроса к базе данных"
 // @Router /song [get]
 func GetSong(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Group       string `json:"group"`
-		Song        string `json:"song"`
-		Text        string `json:"text"`
-		ReleaseDate string `json:"release_date"`
-		Link        string `json:"link"`
-		Limit       int    `json:"limit"`
-		Offset      int    `json:"offset"`
-	}
+	var req structSong.ReqGetSong
 
 	var filters []string
 	var params []interface{}
@@ -172,18 +164,14 @@ func GetSong(w http.ResponseWriter, r *http.Request) {
 // @Description Возвращает текст песни, разделенный на куплеты, с пагинацией
 // @Accept json
 // @Produce json
-// @Param request body struct { Song string `json:"song"`; Limit int `json:"limit"`; Offset int `json:"offset"` } true "Параметры"
+// @Param request body structSong.ReqTextSong true "Параметры"
 // @Success 200 {array} string "Список куплетов"
-// @Failure 400 {object} string "Ошибка декодирования или отсутствует название песни"
-// @Failure 404 {object} string "Песня не найдена"
-// @Failure 500 {object} string "Ошибка при выполнении запроса к базе данных"
+// @Failure 400 {string} string "Ошибка декодирования или отсутствует название песни"
+// @Failure 404 {string} string "Песня не найдена"
+// @Failure 500 {string} string "Ошибка при выполнении запроса к базе данных"
 // @Router /song/text [post]
 func GetText(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Song   string `json:"song"`
-		Limit  int    `json:"limit"`
-		Offset int    `json:"offset"`
-	}
+	var req structSong.ReqTextSong
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&req)
@@ -235,11 +223,11 @@ func GetText(w http.ResponseWriter, r *http.Request) {
 // @Description Удаляет песню из библиотеки по её названию
 // @Accept json
 // @Produce json
-// @Param song body Song true "Название песни для удаления"
-// @Success 200 {object} string "Песня удалена"
-// @Failure 400 {object} string "Ошибка декодирования или отсутствует название песни"
-// @Failure 404 {object} string "Песня не найдена"
-// @Failure 500 {object} string "Ошибка при удалении записи из базы данных"
+// @Param song body structSong.Song true "Название песни для удаления"
+// @Success 200 {string} string "Песня удалена"
+// @Failure 400 {string} string "Ошибка декодирования или отсутствует название песни"
+// @Failure 404 {string} string "Песня не найдена"
+// @Failure 500 {string} string "Ошибка при удалении записи из базы данных"
 // @Router /song [delete]
 func DelSong(w http.ResponseWriter, r *http.Request) {
 	var s structSong.Song
@@ -283,11 +271,11 @@ func DelSong(w http.ResponseWriter, r *http.Request) {
 // @Description Обновляет информацию о песне
 // @Accept json
 // @Produce json
-// @Param song body Song true "Информация для обновления"
-// @Success 200 {object} string "Песня обновлена"
-// @Failure 400 {object} string "Ошибка декодирования или отсутствуют данные для обновления"
-// @Failure 404 {object} string "Песня не найдена"
-// @Failure 500 {object} string "Ошибка обновления записи в базе данных"
+// @Param song body structSong.Song true "Информация для обновления"
+// @Success 200 {string} string "Песня обновлена"
+// @Failure 400 {string} string "Ошибка декодирования или отсутствуют данные для обновления"
+// @Failure 404 {string} string "Песня не найдена"
+// @Failure 500 {string} string "Ошибка обновления записи в базе данных"
 // @Router /song [put]
 func UpdateSong(w http.ResponseWriter, r *http.Request) {
 	var s structSong.Song
