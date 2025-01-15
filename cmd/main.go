@@ -27,7 +27,7 @@ func init() {
 // @BasePath /
 // @schemes http
 func main() {
-	app.RunDB()
+	app.RunDB() //Запуск контейнера postgres, ожидание 5 секунд, запуск миграций
 
 	var err error
 	app.Database, err = sql.Open("postgres", app.GetDSN())

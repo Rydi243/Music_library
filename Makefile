@@ -17,4 +17,4 @@ db-restart:
 	make db-down || make db-up
 
 run:
-	go run ./main.go
+	go run ./cmd/main.go
